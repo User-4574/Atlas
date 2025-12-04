@@ -1,0 +1,21 @@
+#!/bin/bash
+PackageParent='atlas'
+DockerName='atlascontainer'
+NetworkName='Atlas'
+if [ $(docker network ls |grep $NetworkName -c) -lt 1 ];then
+        echo "Network "$NetworkName" not found, creating"
+        docker network create $NetworkName
+else
+        echo "Network "$NetworkName" exists, skipping"
+fi
+docker stop $DockerName
+docker rm $DockerName
+docker build -t $PackageParent/$DockerName AtlasContainer
+docker run -d \
+        --restart unless-stopped \
+        --network $NetworkName \
+        --hostname $DockerName \
+        --name $DockerName \
+        --mount type=bind,source="$(pwd)"/AtlasFiles,target=/AtlasFiles \
+$PackageParent/$DockerName
+docker exec -it $DockerName bash
