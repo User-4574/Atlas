@@ -1,25 +1,27 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS builder
+#Ubuntu is chosen for LTS support, and custom rolled for latest python. We use multi build options to keep the end image smaller
+#Option for setting an APT-cacher locally for building faster
+#This specifies a custom apt proxy. To speed things up and work in air gaps. I also like test building using a local apt proxy to speed things up.
+ARG AptProxy=False
+#This customCA certificate installer allows for internalized systems that might require it. I also run a local transparent squid proxy, so it was required.
+ARG CustomCA=False
+COPY Certificates/$CustomCA /tmp
 
-#2. Metadata (Optional but recommended)
+
+
+#Metadata
 LABEL maintainer="jamie@justanotherdomain.us"
 LABEL description="Atlas Django main container"
-#User ID Django will run as
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-ARG APPUSERNAME=Atlas
 
-#3. Prevent interactive prompts during build (e.g., timezone selection)
+#Prevent interactive prompts during build (e.g., timezone selection)
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY PythonVirtualEnv /PythonVirtualEnv
-COPY scripts /scripts
-COPY requirements.txt /tmp/requirements.txt
-#4. Install updates and essential tools
-#We combine these into a single RUN instruction to reduce image layers
-
-#The insecure on the pyenv build is because my build system is behind a transparent https squid proxy.
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
+#If an Apt proxy is specified, use it.
+RUN if [ "$AptProxy" != "False"]; then \
+      echo "Acquire::http::Proxy \"$AptProxy\";" > /etc/apt/apt.conf.d/01proxy; \
+      echo "Acquire::https::Proxy \"$AptProxy\";" >> /etc/apt/apt.conf.d/01proxy; \
+    fi
+RUN    apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     git \
@@ -42,26 +44,93 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vim \
     python3 \
     python3-venv \
-    python3-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && mkdir /PythonVirtualEnv \
-    && mkdir /scripts \
-    && mkdir -p /AtlasPython \
-    && /PythonVirtualEnv/bin/pyenv install 3.14.1 \
-    && chown -R $APPUSERNAME /AtlasPython \
-    && chown -R $APPUSERNAME /PythonVirtualEnv \
-    && if getent passwd $USER_ID >/dev/null 2>&1; then \
-        existing_user=$(getent passwd $USER_ID | cut -d: -f1) && \
-        usermod -l $APPUSERNAME -d /home/$APPUSERNAME -m $existing_user; \
+    python3-dev
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/*
+#Had to place here so the certificates package would be installed.
+RUN if [ "$CustomCA" != "False" ]; then \
+        echo "Installing custom CA: $CustomCA"; \
+        cp "/tmp/$CustomCA" "/usr/local/share/ca-certificates/$CustomCA"; \
+        update-ca-certificates; \
     else \
-        groupadd -r -g $GROUP_ID $APPUSERNAME && \
-        useradd -r -u $USER_ID -g $APPUSERNAME -d /home/$APPUSERNAME -m $APPUSERNAME; \
+        echo "No custom CA provided; skipping."; \
     fi
 
 
+RUN mkdir /scripts
+RUN mkdir /AtlasPython
+RUN mkdir /PythonVirtualEnv
+COPY PythonVirtualEnv /PythonVirtualEnv
+#Set the python environment
 
-#USER $APPUSERNAME
+#Python version Django will run under.
+ARG PythonVersion=3.14.1
+#Location where Python will be installed
+ARG PythonRoot=/python
 
-# 7. Define the default command to run when the container starts
+#Install specified python version in specified python folder and make it default
+ENV PYENV_ROOT=$PythonRoot
+ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
+RUN mkdir $PythonRoot
+RUN /PythonVirtualEnv/bin/pyenv install "$PythonVersion"
+COPY requirements.txt /$PythonRoot/requirements.txt
+#Multi-stage pip install for speed during testing and building.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/wheels \
+    /$PythonRoot/versions/$PythonVersion/bin/pip wheel -r /$PythonRoot/requirements.txt -w /wheels
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/wheels \
+    /$PythonRoot/versions/$PythonVersion/bin/pip install --no-index --find-links=/wheels -r /$PythonRoot/requirements.txt
+
+#####This is the final base image
+FROM ubuntu:24.04
+#Python version Django will run under.
+ARG PythonVersion=3.14.1
+ARG DevMode=false
+ARG UserId=1000
+ARG GroupId=1000
+ARG AppUserName=Atlas
+ARG PythonRoot=/python
+ARG CustomCA=False
+#Prevent interactive prompts during build (e.g., timezone selection)
+ENV DEBIAN_FRONTEND=noninteractive
+COPY Certificates/$CustomCA /tmp
+#Location where Python will be installed
+COPY --from=builder $PythonRoot $PythonRoot
+COPY scripts /scripts
+ENV PATH="$PythonRoot/versions/$PythonVersion/bin:$PATH"
+#User ID,group ID and username Django will run as
+RUN if getent passwd $UserId >/dev/null 2>&1; then \
+        existing_user=$(getent passwd $UserId | cut -d: -f1) && \
+        usermod -l $AppUserName -d /home/$AppUserName -m $existing_user; \
+    else \
+        groupadd -r -g $GroupId $AppUserName && \
+        useradd -r -u $UserId -g $AppUserName -d /home/$AppUserName -m $AppUserName; \
+    fi \
+    && chown -R $AppUserName $PythonRoot/versions \
+    && chown -R $AppUserName /scripts \
+    && chmod -R 755 /scripts \
+    && if [ "$DevMode" = "True" ]; then \
+        apt-get update \
+        && apt-get install -y sudo \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/* \
+        && echo "$AppUserName ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$AppUserName \
+        && chmod 440 /etc/sudoers.d/$AppUserName; \
+    fi;\
+    if [ "$CustomCA" != "False" ]; then \
+        echo "Installing custom CA: $CustomCA" \
+        && apt-get update \
+        && apt-get install ca-certificates -y \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/* \
+        && cp "/tmp/$CustomCA" "/usr/local/share/ca-certificates/$CustomCA" \
+        && update-ca-certificates; \
+    else \
+        echo "No custom CA provided; skipping."; \
+    fi
+#User we run the container as.
+USER $AppUserName
+
+#Start script
 CMD ["/scripts/start"]

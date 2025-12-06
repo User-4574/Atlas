@@ -1,5 +1,6 @@
 --only-binary=:all:
 
-Django>=5.1,<5.2
+#Django>=5.1,<5.2
+Django
 psycopg2-binary
 pillow

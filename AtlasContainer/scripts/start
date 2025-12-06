@@ -1,21 +1,22 @@
 #!/bin/bash
-myservices=(
+#List of init.d services to start
+services=(
 )
-
-
+#On being killed, trap sigterm and kill things cleanly.
 trap die SIGTERM
 function die(){
- #       for i in "${myservices[@]}";do
- #               logger "stopping $i"
- #               /etc/init.d/$i stop
- #       done
-        exit 0
+  for i in "${services[@]}";do
+    logger "stopping $i"
+    /etc/init.d/$i stop
+  done
+  exit 0
 }
-for i in "${myservices[@]}";do
-        logger "starting $i"
-        /etc/init.d/$i start
+#Start services specified in array
+for i in "${services[@]}";do
+  logger "starting $i"
+  /etc/init.d/$i start
 done
-
+#This allows you to log into the container whether things are working or not.
 for (( ; ; ));do
         sleep 50
 done
