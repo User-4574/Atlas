@@ -11,3 +11,5 @@ dj_database_url
 django-crispy-forms
 crispy-bootstrap5
 gunicorn
+django-environ
+django-jazzmin

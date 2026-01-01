@@ -7,3 +7,4 @@ AtlasContainer/PythonVirtualEnv/*
 .idea/*
 
 *.log
+*.pyc
