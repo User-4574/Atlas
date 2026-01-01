@@ -11,7 +11,8 @@ fi
 docker stop $DockerName
 docker rm $DockerName
 docker build -t $PackageParent/$DockerName AtlasContainer \
-  --build-arg AptProxy=http:/192.168.2.12:3142 \
+  --env-file secrets.env \
+  --build-arg AptProxy=http://192.168.2.12:3142 \
   --build-arg CustomCA=ca.crt \
   --build-arg DevMode=True
 docker run -d \

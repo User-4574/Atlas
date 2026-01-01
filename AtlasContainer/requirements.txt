@@ -1,6 +1,13 @@
 --only-binary=:all:
 
+#If there are problems with 6.
 #Django>=5.1,<5.2
 Django
 psycopg2-binary
 pillow
+#Makes database connections smaller, less bloat in file
+dj_database_url
+#Crispy forms. So when we start doing views we can not have to worry about them looking like garbage. Placeholder reminder
+django-crispy-forms
+crispy-bootstrap5
+gunicorn

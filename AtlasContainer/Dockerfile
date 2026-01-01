@@ -1,17 +1,18 @@
 FROM ubuntu:24.04 AS builder
-#Ubuntu is chosen for LTS support, and custom rolled for latest python. We use multi build options to keep the end image smaller
+
+#Metadata
+LABEL maintainer="jamie@justanotherdomain.us"
+LABEL description="Atlas Django main container"
+
+#This would have been simpler as just a base python docker image, but if anything is going to need tooling it'll be this. For that reason
+#Ubuntu was chosen as it generally has more compatibility and better LTS than official images which rely on Debian or Alpine.
 #Option for setting an APT-cacher locally for building faster
 #This specifies a custom apt proxy. To speed things up and work in air gaps. I also like test building using a local apt proxy to speed things up.
 ARG AptProxy=False
 #This customCA certificate installer allows for internalized systems that might require it. I also run a local transparent squid proxy, so it was required.
 ARG CustomCA=False
-COPY Certificates/$CustomCA /tmp
+COPY Certificates/ /tmp
 
-
-
-#Metadata
-LABEL maintainer="jamie@justanotherdomain.us"
-LABEL description="Atlas Django main container"
 
 #Prevent interactive prompts during build (e.g., timezone selection)
 ENV DEBIAN_FRONTEND=noninteractive
@@ -56,7 +57,6 @@ RUN if [ "$CustomCA" != "False" ]; then \
         echo "No custom CA provided; skipping."; \
     fi
 
-
 RUN mkdir /scripts
 RUN mkdir /AtlasPython
 RUN mkdir /PythonVirtualEnv
@@ -84,6 +84,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 #####This is the final base image
 FROM ubuntu:24.04
+#Metadata
+LABEL maintainer="jamie@justanotherdomain.us"
+LABEL description="Atlas Django main container"
 #Python version Django will run under.
 ARG PythonVersion=3.14.1
 ARG DevMode=false
@@ -94,13 +97,15 @@ ARG PythonRoot=/python
 ARG CustomCA=False
 #Prevent interactive prompts during build (e.g., timezone selection)
 ENV DEBIAN_FRONTEND=noninteractive
-COPY Certificates/$CustomCA /tmp
+COPY Certificates/ /tmp
 #Location where Python will be installed
 COPY --from=builder $PythonRoot $PythonRoot
 COPY scripts /scripts
 ENV PATH="$PythonRoot/versions/$PythonVersion/bin:$PATH"
 #User ID,group ID and username Django will run as
-RUN if getent passwd $UserId >/dev/null 2>&1; then \
+RUN apt-get update \
+    && apt-get install -y curl postgresql-client \
+    && if getent passwd $UserId >/dev/null 2>&1; then \
         existing_user=$(getent passwd $UserId | cut -d: -f1) && \
         usermod -l $AppUserName -d /home/$AppUserName -m $existing_user; \
     else \
@@ -111,26 +116,25 @@ RUN if getent passwd $UserId >/dev/null 2>&1; then \
     && chown -R $AppUserName /scripts \
     && chmod -R 755 /scripts \
     && if [ "$DevMode" = "True" ]; then \
-        apt-get update \
+        echo "Dev mode enabled, setting up SUDO" \
         && apt-get install -y sudo \
-        && apt-get clean \
-        && rm -rf /var/lib/apt/lists/* \
         && echo "$AppUserName ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$AppUserName \
         && chmod 440 /etc/sudoers.d/$AppUserName; \
-    fi;\
-    if [ "$CustomCA" != "False" ]; then \
+    fi \
+    && if [ "$CustomCA" != "False" ]; then \
         echo "Installing custom CA: $CustomCA" \
-        && apt-get update \
         && apt-get install ca-certificates -y \
-        && apt-get clean \
-        && rm -rf /var/lib/apt/lists/* \
         && cp "/tmp/$CustomCA" "/usr/local/share/ca-certificates/$CustomCA" \
         && update-ca-certificates; \
     else \
         echo "No custom CA provided; skipping."; \
-    fi
+    fi \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 #User we run the container as.
 USER $AppUserName
 
 #Start script
 CMD ["/scripts/start"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl --fail http://localhost:8000/ || exit 1

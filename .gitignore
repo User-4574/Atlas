@@ -1,3 +1,9 @@
 
 
 AtlasContainer/Certificates/*
+secrets.env
+DbFiles/*
+AtlasContainer/PythonVirtualEnv/*
+.idea/*
+
+*.log

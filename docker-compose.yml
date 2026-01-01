@@ -1,30 +1,55 @@
 version: "3.9"
 
 services:
-  atlas:
+  django:
     build:
-      context: ./AtlasContainer
+      context: ./AtlasContainer/
       dockerfile: Dockerfile
-    container_name: atlas
-    env_file: settings.env
+      args:
+        DevMode: ${DevMode:-False}
+        CustomCA: ${CustomCA:-False}
+        UserId: ${UserId:-1000}
+        GroupId: ${GroupId:-1000}
+        AppUserName: ${AppUserName:-Atlas}
+        PythonRoot: ${PythonRoot:-/python}
+        PythonVersion: ${PythonVersion:-3.14.1}
+        AptProxy: ${AptProxy:-False}
+    env_file: secrets.env
     depends_on:
       - db
     volumes:
-      - ./AtlasFiles:/app/atlasfiles
-    ports:
-      - "8000:8000"
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
-
+      - ./AtlasFiles:/AtlasFiles
+      - AtlasStatic:/AtlasFiles/Atlas/static
+      - AtlasMedia:/AtlasFiles/Atlas/media
+    expose:
+      - "8000"
   db:
-    image: postgres:15
+    build:
+      context: ./PostgresBuild
+      args:
+        UserId: ${UserId:-1000}
+        GroupId: ${GroupId:-1000}
+        AppUserName: ${AppUserName:-Atlas}
     container_name: atlas-postgres
-    env_file: settings.env
+    env_file: secrets.env
     volumes:
-      - atlas_db_data:/var/lib/postgresql/data
+      - ./DbFiles:/var/lib/postgresql/data
+    expose:
+      - "5432"
+  caddy:
+    image: caddy:latest
+    container_name: atlas-caddy
+    env_file: secrets.env
+    environment:
+      AtlasDomain: ${AtlasDomain:-atlas.local}
+    depends_on:
+      - django
     ports:
-      - "5432:5432"
-
+      - "${CaddyHTTPSPort:-443}:443"
+    volumes:
+      - ./CaddyConfig/${CaddyFileVersion-CaddyFileDev}:/etc/caddy/Caddyfile
+      - AtlasStatic:/AtlasStatic
+      - AtlasMedia:/AtlasMedia
 volumes:
-  atlas_db_data:
+  AtlasStatic:
+  AtlasMedia:
