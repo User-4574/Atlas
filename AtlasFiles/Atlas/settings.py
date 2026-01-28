@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,10 +27,9 @@ SECRET_KEY = 'django-insecure-8oec$w(2po7r4t=*q_q8_xlpzyf@3$5w%_h3hs+g9ks3r(n4o*
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = os.environ.get("SiteNameStrings").split(",")
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -119,8 +121,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
+# TIME_ZONE = os.environ.get("TimeZone")
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_TZ = True
@@ -130,3 +132,47 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Atlas Admin",
+    "site_header": "Atlas",
+    "site_brand": "Atlas",
+
+    "welcome_sign": "Welcome to Atlas Admin",
+
+    "topmenu_links": [
+        {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Docs", "url": "/docs/", "new_window": True},
+    ],
+
+    "usermenu_links": [
+        {"name": "Profile", "url": "admin:auth_user_change", "permissions": ["auth.view_user"]},
+    ],
+
+    "custom_links": {
+        "core": [
+            {
+                "name": "System Overview",
+                "url": "/admin/dashboard/",
+                "icon": "fas fa-chart-line",
+                "permissions": ["auth.view_user"],
+            }
+        ],
+        "billing": [
+            {
+                "name": "Invoices",
+                "url": "/admin/billing/invoice/",
+                "icon": "fas fa-file-invoice-dollar",
+            }
+        ],
+    },
+
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "core": "fas fa-cubes",
+        "billing": "fas fa-credit-card",
+    },
+
+    "order_with_respect_to": ["core", "billing", "auth"],
+}

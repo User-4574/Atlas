@@ -12,14 +12,17 @@ function die(){
   exit 0
 }
 #Start services specified in array
-for i in "${services[@]}";do
-  logger "Atlas: starting $i"
-  /etc/init.d/$i start
-done
+#for i in "${services[@]}";do
+#  logger "Atlas: starting $i"
+#  /etc/init.d/$i start
+#done
+
 until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER"; do
     echo "Atlas: Waiting for Database"
     sleep 1
 done
+cd AtlasFiles
+./manage.py runserver 0.0.0.0:8000
 echo "Atlas:Database ready, starting Atlas system"
 #This allows you to log into the container whether things are working or not.
 for (( ; ; ));do

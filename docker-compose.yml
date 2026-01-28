@@ -3,8 +3,8 @@ version: "3.9"
 services:
   django:
     build:
-      context: ./AtlasContainer/
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: AtlasContainer/Dockerfile
       args:
         DevMode: ${DevMode:-False}
         CustomCA: ${CustomCA:-False}
@@ -21,8 +21,8 @@ services:
       - ./AtlasFiles:/AtlasFiles
       - AtlasStatic:/AtlasFiles/Atlas/static
       - AtlasMedia:/AtlasFiles/Atlas/media
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
   db:
     build:
       context: ./PostgresBuild
@@ -30,22 +30,27 @@ services:
         UserId: ${UserId:-1000}
         GroupId: ${GroupId:-1000}
         AppUserName: ${AppUserName:-Atlas}
-    container_name: atlas-postgres
     env_file: secrets.env
     volumes:
-      - ./DbFiles:/var/lib/postgresql/data
+      - DBData2:/var/lib/postgresql/data
     expose:
       - "5432"
   caddy:
     image: caddy:latest
+    # build:
+      # context: .
+      # dockerfile: CaddyBuild/Dockerfile
+      # args:
+        # CustomCA: ${CustomCA:-False}
     container_name: atlas-caddy
     env_file: secrets.env
     environment:
-      AtlasDomain: ${AtlasDomain:-atlas.local}
+      AtlasServer: django
     depends_on:
       - django
     ports:
-      - "${CaddyHTTPSPort:-443}:443"
+      - "443:443"
+      - "8080:8080"
     volumes:
       - ./CaddyConfig/${CaddyFileVersion-CaddyFileDev}:/etc/caddy/Caddyfile
       - AtlasStatic:/AtlasStatic
@@ -53,3 +58,4 @@ services:
 volumes:
   AtlasStatic:
   AtlasMedia:
+  DBData2:

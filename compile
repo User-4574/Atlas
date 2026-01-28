@@ -1,6 +1,5 @@
 #!/bin/bash
 #docker-compose rm -f
-export BUILDKIT_PROGRESS=plain
 
 set -euo pipefail
 if [ -f build.env ];then
@@ -8,9 +7,13 @@ if [ -f build.env ];then
 fi
 docker compose stop
 docker compose rm -f
-docker compose up --build 2>&1 | tee DockerComposeBuild.log
 
 #This is useful for debugging
-#docker compose up build --no-cache --progress=plain 2>&1 | tee DockerComposeBuild.log
-docker compose up
+#docker compose up --build --progress=plain 2>&1 | tee DockerComposeBuild.log
 
+DOCKER_BUILDKIT=1 \
+BUILDKIT_PROGRESS=plain \
+docker compose build \
+  2>&1 | tee "Docker.log"
+#  --no-cache \
+docker compose up 2>&1 | tee "Docker.log"

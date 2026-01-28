@@ -1,27 +1,20 @@
 {
-	# REQUIRED when using on_demand
-	# Disable safety checks — you are explicitly allowing any name
-	on_demand_tls {
-		ask off
+	servers {
+		protocols h1 h2
 	}
 }
 
-:443 {
-	# Use internal CA (snakeoil)
-	tls internal {
-		on_demand
-	}
+:80 {
+	redir https://{host}{uri}
+}
 
-	# Serve CA for download (optional but recommended)
-	handle /caddy-ca.crt {
-		root * /data/caddy/pki/authorities/local
-		rewrite * /root.crt
-		header Content-Disposition "attachment; filename=caddy-local-root.crt"
-		file_server
-	}
+localhost:{$CaddyHTTPSPort}, 127.0.0.1:{$CaddyHTTPSPort}, {$SiteName}:{$CaddyHTTPSPort} {
+	tls internal
+	reverse_proxy {$AtlasServer}:{$AtlasPortInt}
+}
 
-	# Everything goes to Django
-	handle {
-		reverse_proxy atlas:8000
-	}
+#This redirects anything else to the sitename
+:{$CaddyHTTPSPort} {
+	tls internal
+	redir https://{$SiteName}:{$CaddyHTTPSPort}{uri} 308
 }

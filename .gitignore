@@ -1,10 +1,422 @@
+############################################
+# Always keep folder structure controls
+
+############################################
+
+!.gitignore
+
+!.gitkeep
+
+# Keep dependency definitions ###################
+
+!requirements.txt
 
 
-AtlasContainer/Certificates/*
-secrets.env
-DbFiles/*
-AtlasContainer/PythonVirtualEnv/*
-.idea/*
+###########################################
+
+# OS & editor junk
+
+############################################
+
+# macOS ###################################
+
+.DS_Store
+
+# Windows ##################################
+
+Thumbs.db
+
+ehthumbs.db
+
+Desktop.ini
+
+# Editors / IDEs ###############################
+
+.vscode/
+
+.idea/
+
+*.sublime-project
+
+*.sublime-workspace
+
+
+###########################################
+
+# Dependencies & virtual environments
+
+############################################
+
+# Node #####################################
+
+node_modules/
+
+# Python ####################################
+
+venv/
+
+.env/
+
+__pycache__
+
+# Docker ####################################
+
+.env
+
+*.env
+
+
+###########################################
+
+# Python / Django generated artifacts
+
+############################################
+
+# Python compiled files ########################
+
+*.pyc
+
+*.pyo
+
+*.pyd
+
+# Explicitly ignore package markers ###############
+
+__init__.py
+
+# Django migrations (generated, reproducible) ######
+
+**/migrations/
+
+!**/migrations/__init__.py
+
+# Django static collection output #################
+
+**/static/
+
+**/staticfiles/
+
+
+###########################################
+
+# Runtime output & diagnostics
+
+############################################
+
+# Logs
 
 *.log
-*.pyc
+
+log/
+
+# Coverage / test output ########################
+
+coverage/
+
+*.lcov
+
+
+###########################################
+
+# Databases & local state (ALL engines)
+
+############################################
+
+# SQLite ####################################
+
+*.sqlite
+
+*.sqlite3
+
+*.db
+
+# MySQL / MariaDB ###########################
+
+*.sql
+
+*.frm
+
+*.ibd
+
+*.myd
+
+*.myi
+
+# PostgreSQL ###############################
+
+*.dump
+
+*.pgdump
+
+*.psql
+
+# Microsoft SQL Server ########################
+
+*.mdf
+
+*.ndf
+
+*.ldf
+
+*.bak
+
+# Microsoft Access ############################
+
+*.mdb
+
+*.accdb
+
+# MongoDB ##################################
+
+*.bson
+
+*.wt
+
+*.lock
+
+
+###########################################
+
+# Certificates, keys, and secrets (NO EXCEPTIONS)
+
+############################################
+
+*.pem
+
+*.crt
+
+*.cer
+
+*.key
+
+*.pfx
+
+*.p12
+
+*.csr
+
+*.der
+
+*.jks
+
+*.keystore
+
+*.truststore
+
+
+###########################################
+
+# Data, configs, and exports (non-source)
+
+############################################
+
+# JSON configs & exports ######################
+
+*.json
+
+# Documents & exports ########################
+
+*.pdf
+
+*.doc
+
+*.docx
+
+*.ppt
+
+*.pptx
+
+*.xls
+
+*.xlsx
+
+*.odt
+
+*.ods
+
+*.odp
+
+*.rtf
+
+*.txt
+
+*.csv
+
+
+###########################################
+
+# Media & binary blobs
+
+############################################
+
+# Images ####################################
+
+*.jpg
+
+*.jpeg
+
+*.png
+
+*.gif
+
+*.bmp
+
+*.tiff
+
+*.ico
+
+*.svg
+
+*.webp
+
+
+# Video ####################################
+
+*.mp4
+
+*.avi
+
+*.mkv
+
+*.mov
+
+*.wmv
+
+*.flv
+
+*.webm
+
+
+# Audio ####################################
+
+*.mp3
+
+*.wav
+
+*.ogg
+
+*.flac
+
+*.aac
+
+*.m4a
+
+# Video #####################################
+
+*.mp4
+
+*.avi
+
+*.mkv
+
+*.mov
+
+*.wmv
+
+*.flv
+
+*.webm
+
+
+############################################
+
+# Archives & compressed blobs
+
+############################################
+
+*.zip
+
+*.tar.gz
+
+*.rar
+
+*.7z
+
+*.gz
+
+*.bz2
+
+*.xz
+
+
+###########################################
+
+# Unix domain socket files (runtime only)
+
+############################################
+
+*.sock
+
+**/*.sock
+
+############################################
+
+# User uploads / generated content
+
+############################################
+
+# Any directory named "uploads" at any depth #######
+
+**/uploads/
+
+############################################
+
+# Project documentation (explicitly allowed)
+
+############################################
+
+# Allow documentation folder and its contents #######
+
+!ProjectDocumentation/
+
+!ProjectDocumentation/**
+
+# Re-allow common documentation formats inside it ##
+
+!ProjectDocumentation/**/*.pdf
+
+!ProjectDocumentation/**/*.doc
+
+!ProjectDocumentation/**/*.docx
+
+!ProjectDocumentation/**/*.ppt
+
+!ProjectDocumentation/**/*.pptx
+
+!ProjectDocumentation/**/*.xls
+
+!ProjectDocumentation/**/*.xlsx
+
+!ProjectDocumentation/**/*.odt
+
+!ProjectDocumentation/**/*.ods
+
+!ProjectDocumentation/**/*.odp
+
+!ProjectDocumentation/**/*.rtf
+
+!ProjectDocumentation/**/*.txt
+
+!ProjectDocumentation/**/*.csv
+
+
+# Re-allow media inside documentation ###########
+
+!ProjectDocumentation/**/*.jpg
+
+!ProjectDocumentation/**/*.jpeg
+
+!ProjectDocumentation/**/*.png
+
+!ProjectDocumentation/**/*.svg
+
+!ProjectDocumentation/**/*.mp4
+
+!ProjectDocumentation/**/*.webm
+
+!ProjectDocumentation/**/*.mp3
+
+
+
+#Exclude virtual Environment
+AtlasContainer/PythonVirtualEnv/*

@@ -60,7 +60,7 @@ RUN if [ "$CustomCA" != "False" ]; then \
 RUN mkdir /scripts
 RUN mkdir /AtlasPython
 RUN mkdir /PythonVirtualEnv
-COPY PythonVirtualEnv /PythonVirtualEnv
+COPY AtlasContainer/PythonVirtualEnv /PythonVirtualEnv
 #Set the python environment
 
 #Python version Django will run under.
@@ -73,7 +73,7 @@ ENV PYENV_ROOT=$PythonRoot
 ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
 RUN mkdir $PythonRoot
 RUN /PythonVirtualEnv/bin/pyenv install "$PythonVersion"
-COPY requirements.txt /$PythonRoot/requirements.txt
+COPY AtlasContainer/requirements.txt /$PythonRoot/requirements.txt
 #Multi-stage pip install for speed during testing and building.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/wheels \
@@ -100,11 +100,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 COPY Certificates/ /tmp
 #Location where Python will be installed
 COPY --from=builder $PythonRoot $PythonRoot
-COPY scripts /scripts
+COPY AtlasContainer/scripts /scripts
 ENV PATH="$PythonRoot/versions/$PythonVersion/bin:$PATH"
 #User ID,group ID and username Django will run as
 RUN apt-get update \
-    && apt-get install -y curl postgresql-client \
+    && apt-get install -y curl postgresql-client net-tools tzdata\
     && if getent passwd $UserId >/dev/null 2>&1; then \
         existing_user=$(getent passwd $UserId | cut -d: -f1) && \
         usermod -l $AppUserName -d /home/$AppUserName -m $existing_user; \
